@@ -1,3 +1,6 @@
+
+#Requires -Module ExchangeOnlineManagement,AzureAD
+
 <#
 .SYNOPSIS
 Retrieves various configurations from the Azure AD/O365 tenant to provide insight during threat hunting.
@@ -42,6 +45,7 @@ This tool will return most queries in .CSV format, and a few in .TXT format. Add
 
 .PARAMETER Interactive
 [OPTIONAL] Some commands may take a long time to process depending on the amount of data in the tenant. Using the Interactive parameter, you will have the option to skip any particular command prior to the module running.
+
 
 .EXAMPLE
 .\Get-CRTReport.ps1
@@ -97,7 +101,7 @@ Param (
     [String]$Commands,
     [Switch]$Interactive,
     [String]$JobName,
-    [System.IO.FileInfo]$WorkingDirectory
+    [System.IO.FileInfo]$WorkingDirectory   
 );
 
 #...................................
@@ -139,6 +143,17 @@ Function Out-Summary {
         $sumstring | Out-File -FilePath $SummaryFile -Append
     }
 };
+
+# Choose your Azure Tenant
+$Microsoft365 = New-Object System.Management.Automation.Host.ChoiceDescription '&Microsoft365', 'Azure Tenant: Microsoft 365'
+$GCC = New-Object System.Management.Automation.Host.ChoiceDescription '&Microsoft365GCC', 'Azure Tenant: Microsoft 365 GCC'
+$GCCHIGH = New-Object System.Management.Automation.Host.ChoiceDescription '&GCCHIGH', 'Azure Tenant: GCC High'
+$O365GermanyCloud = New-Object System.Management.Automation.Host.ChoiceDescription '&Microsoft365Germany', 'Azure Tenant: Microsoft 365 Germany'
+$O365USGovDoD = New-Object System.Management.Automation.Host.ChoiceDescription '&Microsoft365GOVDoD', 'Azure Tenant: Microsoft 365 DoD'
+$options = [System.Management.Automation.Host.ChoiceDescription[]]($Microsoft365, $GCC, $GCCHIGH, $O365GermanyCloud, $O365USGovDoD)
+$title = 'CrowdStrike Reporting Tool'
+$message = 'Which Azure Tenant do you use?'
+$result = $host.ui.PromptForChoice($title, $message, $options, 0)
 
 # Function to process results to output.log
 Function Out-LogFile {
@@ -377,9 +392,31 @@ Out-LogFile "Authenticating to Exchange Online";
 # Connect to Exchange Online
 try {
     if ($BasicAuth) {
-        Connect-ExchangeOnline -Credential $loginCreds -ShowBanner:$false -ErrorAction Stop 6>$null
+        if ($result -lt 2){
+            Connect-ExchangeOnline -Credential $loginCreds -ShowBanner:$false -ErrorAction Stop 6>$null
+        }
+	elseif ($result -eq 2) {
+            Connect-ExchangeOnline -Credential $loginCreds -ExchangeEnvironmentName O365USGovGCCHigh -ShowBanner:$false -ErrorAction Stop 6>$null
+        }
+	elseif ($result -eq 3) {
+            Connect-ExchangeOnline -Credential $loginCreds -ExchangeEnvironmentName O365GermanyCloud -ShowBanner:$false -ErrorAction Stop 6>$null
+        }
+	else{
+            Connect-ExchangeOnline -Credential $loginCreds -ExchangeEnvironmentName O365USGovDoD -ShowBanner:$false -ErrorAction Stop 6>$null
+        }
     } else {
-        Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop 6>$null
+        if ($result -lt 2){
+            Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop 6>$null
+        }
+	    elseif ($result -eq 2) {
+            Connect-ExchangeOnline -ExchangeEnvironmentName O365USGovGCCHigh -ShowBanner:$false -ErrorAction Stop 6>$null
+        }
+	    elseif ($result -eq 3) {
+            Connect-ExchangeOnline -ExchangeEnvironmentName O365GermanyCloud -ShowBanner:$false -ErrorAction Stop 6>$null
+        }
+	    else {
+            Connect-ExchangeOnline -ExchangeEnvironmentName O365USGovDoD -ShowBanner:$false -ErrorAction Stop 6>$null
+        }
     };
     Out-LogFile "Successfully connected to Exchange Online"
 } catch {
@@ -389,44 +426,107 @@ try {
             Out-LogFile "Disconnected from previous Exchange Online session(s)"
         } catch {
             throw $_.Exception.Message
+            }
+        }
         };
         try {
             if ($BasicAuth) {
-                Connect-ExchangeOnline -Credential $loginCreds -ShowBanner:$false -ErrorAction Stop 6>$null
-            } else {
-                Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop 6>$null
-            };
+                if ($result -lt 2){
+                    Connect-ExchangeOnline -Credential $loginCreds -ShowBanner:$false -ErrorAction Stop 6>$null
+                }
+	            elseif ($result -eq 2) {
+                    Connect-ExchangeOnline -Credential $loginCreds -ExchangeEnvironmentName O365USGovGCCHigh -ShowBanner:$false -ErrorAction Stop 6>$null
+                }
+	            elseif ($result -eq 3) {
+                    Connect-ExchangeOnline -Credential $loginCreds -ExchangeEnvironmentName O365GermanyCloud -ShowBanner:$false -ErrorAction Stop 6>$null
+                }
+	            elseif ($result -eq 4) {
+                    Connect-ExchangeOnline -Credential $loginCreds -ExchangeEnvironmentName O365USGovDoD -ShowBanner:$false -ErrorAction Stop 6>$null
+                }
+                else {
+                    if ($result -lt 2){
+                        Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop 6>$null
+                    }
+	                elseif ($result -eq 2) {
+                        Connect-ExchangeOnline -ExchangeEnvironmentName O365USGovGCCHigh -ShowBanner:$false -ErrorAction Stop 6>$null
+                    }
+	                elseif ($result -eq 3) {
+                        Connect-ExchangeOnline -ExchangeEnvironmentName O365GermanyCloud -ShowBanner:$false -ErrorAction Stop 6>$null
+                    }
+	                else {
+                        Connect-ExchangeOnline -ExchangeEnvironmentName O365USGovDoD -ShowBanner:$false -ErrorAction Stop 6>$null
+                    }
+                }
+    };
             Out-LogFile "Successfully connected to Exchange Online"
         } catch {
             throw $_.Exception.Message
-        }
+        
     } else {
         throw $_.Exception.Message
-    }
+    
 };
 Out-LogFile "Authenticating to Azure AD";
 # Connect to Azure AD
 try {
     if ($BasicAuth) {
-        $ConnectAZD = Connect-AzureAD -Credential $loginCreds -ErrorAction Stop 6>$null
+        if ($result -lt 2){
+            $ConnectAZD = Connect-AzureAD -Credential $loginCreds -ErrorAction Stop 6>$null
+        }
+	elseif ($result -eq 2) {
+            $ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        }
+	elseif ($result -eq 3) {
+            $ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureGermanyCloud -ErrorAction Stop 6>$null
+        }
+	else{
+            $ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        }
     } else {
-        $ConnectAZD = Connect-AzureAD -ErrorAction Stop 6>$null
+        if ($result -lt 2){
+            $ConnectAZD = Connect-AzureAD -ErrorAction Stop 6>$null
+        }
+	    elseif ($result -eq 2) {
+            $ConnectAZD = Connect-AzureAD -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        }
+	    elseif ($result -eq 3) {
+            $ConnectAZD = Connect-AzureAD -AzureEnvironmentName AzureGermanyCloud -ErrorAction Stop 6>$null
+        }
+	    else {
+            $ConnectAZD = Connect-AzureAD -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        }
     };
     Out-LogFile "Successfully connected to Azure AD"
 } catch {
     if($_.Exception.Message -match "you have exceeded the maximum number of connections allowed"){
         try {
-            Disconnect-AzureAD | Out-Null;
-            Out-LogFile "Disconnected from previous Azure AD session(s)"
-        } catch {
-            Write-Error $_.Exception.Message
-        };
-        try {
             if ($BasicAuth) {
-                $ConnectAZD = Connect-AzureAD -Credential $loginCreds -ErrorAction Stop 6>$null
-            } else {
-                $ConnectAZD = Connect-AzureAD -ErrorAction Stop 6>$null
-            };
+        	if ($result -lt 2){
+            		$ConnectAZD = Connect-AzureAD -Credential $loginCreds -ErrorAction Stop 6>$null
+        	}
+		elseif ($result -eq 2) {
+            		$ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        	}
+		elseif ($result -eq 3) {
+            		$ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureGermanyCloud -ErrorAction Stop 6>$null
+        	}
+		else{
+            		$ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        	}
+    } else {
+        if ($result -lt 2){
+            $ConnectAZD = Connect-AzureAD -ErrorAction Stop 6>$null
+        }
+	    elseif ($result -eq 2) {
+            $ConnectAZD = Connect-AzureAD -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        }
+	    elseif ($result -eq 3) {
+            $ConnectAZD = Connect-AzureAD -AzureEnvironmentName AzureGermanyCloud -ErrorAction Stop 6>$null
+        }
+	    else {
+            $ConnectAZD = Connect-AzureAD -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        }
+    };
             Out-LogFile "Successfully connected to Azure AD"
         } catch {
             throw $_.Exception.Message
@@ -1486,7 +1586,18 @@ if ($continue) {
         if ($_.Exception.Message -ieq "You must call the Connect-AzureAD cmdlet before calling any other cmdlets.") {
             #Connect to Azure AD
             try {
-                $AzureADConnection = Connect-AzureAD -ErrorAction Stop 6>$null;
+                if ($result -lt 2){
+                $ConnectAZD = Connect-AzureAD -Credential $loginCreds -ErrorAction Stop 6>$null
+            }
+	        elseif ($result -eq 2) {
+                $ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+            }
+	        elseif ($result -eq 3) {
+                $ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureGermanyCloud -ErrorAction Stop 6>$null
+            }
+	    else{
+            $ConnectAZD = Connect-AzureAD -Credential $loginCreds -AzureEnvironmentName AzureUSGovernment -ErrorAction Stop 6>$null
+        }
                 $AzureADRoles = @(Get-AzureADDirectoryRole -ErrorAction Stop)
             } catch {
                 throw $_.Exception.Message
@@ -1786,3 +1897,4 @@ try {
 } catch {
     Write-Error $_.Exception.Message
 }
+ 

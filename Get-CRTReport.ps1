@@ -462,9 +462,7 @@ try {
         } catch {
             throw $_.Exception.Message
         
-    } else {
-        throw $_.Exception.Message
-    
+       
 };
 Out-LogFile "Authenticating to Azure AD";
 # Connect to Azure AD

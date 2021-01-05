@@ -145,12 +145,12 @@ Function Out-Summary {
 };
 
 # Choose your Azure Tenant
-$Microsoft365 = New-Object System.Management.Automation.Host.ChoiceDescription '&Microsoft365', 'Azure Tenant: Microsoft 365'
-$GCC = New-Object System.Management.Automation.Host.ChoiceDescription '&Microsoft365GCC', 'Azure Tenant: Microsoft 365 GCC'
-$GCCHIGH = New-Object System.Management.Automation.Host.ChoiceDescription '&GCCHIGH', 'Azure Tenant: GCC High'
-$O365GermanyCloud = New-Object System.Management.Automation.Host.ChoiceDescription '&Microsoft365Germany', 'Azure Tenant: Microsoft 365 Germany'
-$O365USGovDoD = New-Object System.Management.Automation.Host.ChoiceDescription '&Microsoft365GOVDoD', 'Azure Tenant: Microsoft 365 DoD'
-$options = [System.Management.Automation.Host.ChoiceDescription[]]($Microsoft365, $GCC, $GCCHIGH, $O365GermanyCloud, $O365USGovDoD)
+$MICROSOFT365 = New-Object System.Management.Automation.Host.ChoiceDescription '&1_Microsoft365', 'Azure Tenant: Microsoft 365'
+$GCC = New-Object System.Management.Automation.Host.ChoiceDescription '&2_MicrosoftGCC', 'Azure Tenant: GCC'
+$GCCHIGH = New-Object System.Management.Automation.Host.ChoiceDescription '&3_GCCHIGH', 'Azure Tenant: GCC High'
+$O365GermanyCloud = New-Object System.Management.Automation.Host.ChoiceDescription '&4_Microsoft365Germany', 'Azure Tenant: Microsoft 365 Germany'
+$O365USGovDoD = New-Object System.Management.Automation.Host.ChoiceDescription '&5_Microsoft365GOVDoD', 'Azure Tenant: Microsoft 365 DoD'
+$options = [System.Management.Automation.Host.ChoiceDescription[]]($MICROSOFT365, $GCC, $GCCHIGH, $O365GermanyCloud, $O365USGovDoD)
 $title = 'CrowdStrike Reporting Tool'
 $message = 'Which Azure Tenant do you use?'
 $result = $host.ui.PromptForChoice($title, $message, $options, 0)
